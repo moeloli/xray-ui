@@ -772,6 +772,9 @@ class FinalMaskSettings extends XrayCommonClass {
         this.tcp = tcp;
         this.udp = udp;
         this.quicParams = quicParams;
+        const hasUdp = udp.some(m => !ObjectUtil.isEmpty(m.type));
+        const hasTcp = tcp.some(m => !ObjectUtil.isEmpty(m.type));
+        this.maskType = hasUdp && !hasTcp ? 'udp' : 'tcp';
     }
 
     addTcpMask(type = '', settings = new FinalMaskSettings.Mask.Settings()) {
@@ -1310,23 +1313,29 @@ FinalMaskSettings.Mask.Settings.HeaderCustom.PacketSetting = class extends XrayC
     }
 
     static fromJson(json = {}) {
+        const packet = ObjectUtil.isEmpty(json.packet) ? [] : json.packet;
+        const rand = packet.length > 0 ? 0 : (ObjectUtil.isEmpty(json.rand) ? 0 : json.rand);
         return new FinalMaskSettings.Mask.Settings.HeaderCustom.PacketSetting(
             ObjectUtil.isEmpty(json.delay) ? 0 : json.delay,
-            ObjectUtil.isEmpty(json.rand) ? 0 : json.rand,
+            rand,
             ObjectUtil.isEmpty(json.randRange) ? '0-255' : json.randRange,
             ObjectUtil.isEmpty(json.type) ? 'array' : json.type,
-            ObjectUtil.isEmpty(json.packet) ? [] : json.packet,
+            packet,
         );
     }
 
     toJson() {
-        return {
+        const result = {
             delay: this.delay,
-            rand: this.rand,
             randRange: this.randRange,
             type: this.type,
-            packet: ObjectUtil.clone(this.packet),
         };
+        if (this.packet.length > 0) {
+            result.packet = ObjectUtil.clone(this.packet);
+        } else {
+            result.rand = this.rand;
+        }
+        return result;
     }
 };
 
@@ -1416,21 +1425,27 @@ FinalMaskSettings.Mask.Settings.UdpHeaderCustom.PacketSetting = class extends Xr
     }
 
     static fromJson(json = {}) {
+        const packet = ObjectUtil.isEmpty(json.packet) ? [] : json.packet;
+        const rand = packet.length > 0 ? 0 : (ObjectUtil.isEmpty(json.rand) ? 0 : json.rand);
         return new FinalMaskSettings.Mask.Settings.UdpHeaderCustom.PacketSetting(
-            ObjectUtil.isEmpty(json.rand) ? 0 : json.rand,
+            rand,
             ObjectUtil.isEmpty(json.randRange) ? '0-255' : json.randRange,
             ObjectUtil.isEmpty(json.type) ? 'array' : json.type,
-            ObjectUtil.isEmpty(json.packet) ? [] : json.packet,
+            packet,
         );
     }
 
     toJson() {
-        return {
-            rand: this.rand,
+        const result = {
             randRange: this.randRange,
             type: this.type,
-            packet: ObjectUtil.clone(this.packet),
         };
+        if (this.packet.length > 0) {
+            result.packet = ObjectUtil.clone(this.packet);
+        } else {
+            result.rand = this.rand;
+        }
+        return result;
     }
 };
 
@@ -1623,7 +1638,7 @@ FinalMaskSettings.Mask.Settings.Noise.PacketSetting = class extends XrayCommonCl
 
     setRand(value = '1-8192') {
         this.rand = ObjectUtil.isEmpty(value) ? '1-8192' : value;
-        if (!ObjectUtil.isEmpty(this.rand)) {
+        if (!ObjectUtil.isEmpty(this.rand) && this.rand !== '0') {
             this.packet = [];
         }
     }
@@ -1638,23 +1653,29 @@ FinalMaskSettings.Mask.Settings.Noise.PacketSetting = class extends XrayCommonCl
     }
 
     static fromJson(json = {}) {
+        const packet = ObjectUtil.isEmpty(json.packet) ? [] : json.packet;
+        const rand = packet.length > 0 ? '' : (ObjectUtil.isEmpty(json.rand) ? '1-8192' : json.rand);
         return new FinalMaskSettings.Mask.Settings.Noise.PacketSetting(
-            ObjectUtil.isEmpty(json.rand) ? '1-8192' : json.rand,
+            rand,
             ObjectUtil.isEmpty(json.randRange) ? '0-255' : json.randRange,
             ObjectUtil.isEmpty(json.type) ? 'array' : json.type,
-            ObjectUtil.isEmpty(json.packet) ? [] : json.packet,
+            packet,
             ObjectUtil.isEmpty(json.delay) ? '10-20' : json.delay,
         );
     }
 
     toJson() {
-        return {
-            rand: this.rand,
+        const result = {
             randRange: this.randRange,
             type: this.type,
-            packet: ObjectUtil.clone(this.packet),
             delay: this.delay,
         };
+        if (this.packet.length > 0) {
+            result.packet = ObjectUtil.clone(this.packet);
+        } else {
+            result.rand = this.rand;
+        }
+        return result;
     }
 };
 
