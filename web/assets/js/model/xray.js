@@ -3377,12 +3377,51 @@ class Inbound extends XrayCommonClass {
         return url.toString();
     }
 
+    genHysteriaLink(address = '', remark = '') {
+        const settings = this.settings;
+        const auth = settings.clients[0].auth;
+        const port = this.port;
+        const params = new Map();
+        const hysteria = this.stream.hysteria;
+        if (this.stream.tls.sni) {
+            params.set("sni", this.stream.tls.sni);
+        }
+        if (this.stream.tls.alpn && this.stream.tls.alpn.length > 0 && this.stream.tls.alpn[0]) {
+            params.set("alpn", this.stream.tls.alpn.join(','));
+        }
+        if (this.stream.tls.settings.fingerprint) {
+            params.set("fp", this.stream.tls.settings.fingerprint);
+        }
+        params.set("insecure", 0);
+        params.set("allowInsecure", 0);
+        if (this.stream.finalmask && this.stream.finalmask.udp) {
+            const salamander = this.stream.finalmask.udp.find(m => m.type === 'salamander');
+            if (salamander && salamander.settings.salamander.password) {
+                params.set("obfs", "salamander");
+                params.set("obfs-password", salamander.settings.salamander.password);
+            }
+        }
+        if (hysteria.portHopping && hysteria.portHopping.enabled && hysteria.portHopping.ports) {
+            params.set("mport", hysteria.portHopping.ports);
+        }
+        const link = `hysteria2://${auth}@${address}:${port}`;
+        const url = new URL(link);
+        for (const [key, value] of params) {
+            url.searchParams.set(key, value);
+        }
+        if (remark) {
+            url.hash = encodeURIComponent(remark);
+        }
+        return url.toString();
+    }
+
     genLink(address = '', remark = '') {
         switch (this.protocol) {
             case Protocols.VMESS: return this.genVmessLink(address, remark);
             case Protocols.VLESS: return this.genVLESSLink(address, remark);
             case Protocols.SHADOWSOCKS: return this.genSSLink(address, remark);
             case Protocols.TROJAN: return this.genTrojanLink(address, remark);
+            case Protocols.HYSTERIA: return this.genHysteriaLink(address, remark);
             default: return '';
         }
     }
